@@ -14,6 +14,7 @@ const retourModaleDefinition = [
   //{ name: 'whichEditTableModal', fonction: TableUtils.preciserModificationTable },
 ];
 
+
 // ----------------------------------
 // --- LISTER LES COMMANDES SLASH ---
 // ----------------------------------
@@ -29,28 +30,6 @@ const slashCommandsDefinition = [
   { name: 'inventairejds', description: 'Lister l\'inventaire des jeux de société de l\'asso', fonction: cmdSlashInventaireJds },
   { name: 'inventairejdr', description: 'Lister l\'inventaire des jeux de rôle de l\'asso', fonction: cmdSlashInventaireJdr },
 ];
-
-
-const slashCommands = [];
-slashCommandsDefinition.forEach(commande => {
-  const newCommande = new SlashCommandBuilder()
-    .setName(commande.name)
-    .setDescription(commande.description);
-
-  // ajout des options
-  if (commande.options) {
-    commande.options.forEach(option => {
-      newCommande.AddOption(option.name, option.type, option.description, option.required)
-    });
-  }
-
-  slashCommands.push({
-    data: newCommande,
-    async execute(interaction) {
-      commande.fonction(interaction);
-    },
-  })
-});
 
 
 // ----------------------------
@@ -79,6 +58,8 @@ const reactions = {
     { terme: ["livre", "book", "bouquin", "bibliothèque", "librairie"], type: [typesReaction.MOT_CONTENU], fonction: cmdReactLivre }
   ],
 };
+
+
 
 
 // ------------------------------
@@ -194,7 +175,7 @@ function cmdSupprimerLivre(message) {
 
 export {
   retourModaleDefinition as RetourModaleDefinition,
-  slashCommands as SlashCommands,
+  slashCommandsDefinition as SlashCommandsDefinition,
   reactions as Reactions,
   typesReaction as TYPES
 };

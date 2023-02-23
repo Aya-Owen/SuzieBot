@@ -1,7 +1,7 @@
 import { Config } from "./services/config.js";
 import { TableUtils } from './services/table.utils.js';
-import { Reactions, SlashCommands, TYPES, RetourModaleDefinition } from "./services/suzie-commands.js";
-import { Client, GatewayIntentBits, Partials, Collection, Events, REST, Routes, EmbedBuilder } from 'discord.js';
+import { Reactions, SlashCommandsDefinition, TYPES, RetourModaleDefinition } from "./services/suzie-commands.js";
+import { Client, GatewayIntentBits, Partials, Collection, Events, REST, Routes, SlashCommandBuilder } from 'discord.js';
 import { SuzieMessage } from "./services/reponses.js"
 
 // début de l'application
@@ -47,13 +47,32 @@ function prete() {
 // --- SLASH COMMANDES ---
 // -----------------------
 function preparerCommandes() {
+  var slashCommands = [];
   const rest = new REST({ version: '10' }).setToken(Config.token);
   (async () => {
     try {
-      console.log(`Started refreshing ${SlashCommands.length} application (/) commands.`);
+      console.log(`Started refreshing ${SlashCommandsDefinition.length} application (/) commands.`);
       var commandeBody = [];
-      SlashCommands.forEach(commande => {
-        commandeBody.push(commande.data);
+
+      SlashCommandsDefinition.forEach(commande => {
+        const newCommande = new SlashCommandBuilder()
+          .setName(commande.name)
+          .setDescription(commande.description);
+
+        // ajout des options
+        if (commande.options) {
+          commande.options.forEach(option => {
+            newCommande.AddOption(option.name, option.type, option.description, option.required)
+          });
+        }
+
+        slashCommands.push({
+          data: newCommande,
+          async execute(interaction) {
+            commande.fonction(interaction);
+          },
+        })
+        commandeBody.push(newCommande);
       });
 
       // The put method is used to fully refresh all commands in the guild with the current set
@@ -70,7 +89,7 @@ function preparerCommandes() {
   })();
 
   client.commands = new Collection();
-  for (const command of SlashCommands) {
+  for (const command of slashCommands) {
     client.commands.set(command.data.name, command);
   }
 
