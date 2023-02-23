@@ -1,20 +1,30 @@
-import { ApplicationCommandOptionType, ModalBuilder, TextInputStyle, TextInputBuilder, ActionRowBuilder, SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder } from 'discord.js';
 import { Utils } from './utils.js';
 import { InventaireUtils } from './inventaire.utils.js';
 import { TableUtils } from './table.utils.js';
 import { SuzieMessage } from "./reponses.js"
+
+// -------------------------------------------------
+// --- LISTER LES RECEPTION DE RETOUR DE MODALES ---
+// -------------------------------------------------
+const retourModaleDefinition = [
+  { name: 'addTableModal', fonction: TableUtils.enregistrerTables },
+  { name: 'editTableModal', fonction: TableUtils.modifierTable },
+  { name: 'whichDeleteTableModal', fonction: TableUtils.supprimerTable },
+  { name: 'whichEditTableModal', fonction: TableUtils.preciserMidificationTable },
+];
 
 // ----------------------------------
 // --- LISTER LES COMMANDES SLASH ---
 // ----------------------------------
 const slashCommandsDefinition = [
   { name: 'ajoutertable', description: 'Prévoir une table pour un prochain weekend.', fonction: cmdSlashAjouterTable },
-  { name: 'supprimertable', description: 'Supprimer une table existante.', fonction: cmdSlashSupprimerTable },
+  { name: 'supprimertable', description: 'Supprimer une de tes tables existantes.', fonction: cmdSlashSupprimerTable },
   { name: 'modifiertable', description: 'Modifier une table déjà prévue.', fonction: cmdSlashModifiertable },
+
   { name: 'afficherprochainestables', description: 'Afficher les tables prévues pour bientôt.', fonction: cmdSlashAfficherTable },
   { name: 'affichermestables', description: 'Afficher les tables futures que tu as prévues.', fonction: cmdSlashAfficherTable },
   { name: 'afficherfuturestables', description: 'Afficher toutes les tables futures.', fonction: cmdSlashAfficherTable },
-
 
   { name: 'inventairejds', description: 'Lister l\'inventaire des jeux de société de l\'asso', fonction: cmdSlashInventaireJds },
   { name: 'inventairejdr', description: 'Lister l\'inventaire des jeux de rôle de l\'asso', fonction: cmdSlashInventaireJdr },
@@ -88,9 +98,9 @@ function cmdReactLivre(message) { message.react(Utils.randomInListe(['📔', '�
 
 // commandes
 function cmdSlashAfficherTable(interaction) { cmdVoirTable(interaction); }
-function cmdSlashAjouterTable(interaction) { modaleTable(interaction); }
-function cmdSlashSupprimerTable(interaction) { interaction.reply("Supprimer table !"); }
-function cmdSlashModifiertable(interaction) { interaction.reply("Modifier table !"); }
+function cmdSlashAjouterTable(interaction) { modaleCreateTable(interaction); }
+function cmdSlashSupprimerTable(interaction) { modaleWhichDeleteTable(interaction); }
+function cmdSlashModifiertable(interaction) { modaleWhichEditTable(interaction); }
 function cmdSlashInventaireJds(interaction) { inventaireInteraction(interaction, InventaireUtils.Types.JDS); }
 function cmdSlashInventaireJdr(interaction) { inventaireInteraction(interaction, InventaireUtils.Types.JDR); }
 
@@ -102,8 +112,23 @@ function cmdSlashInventaireJdr(interaction) { inventaireInteraction(interaction,
 // --- FONCTIONS A EXECUTER ---
 // ----------------------------
 
-async function modaleTable(interaction) {
+async function modaleCreateTable(interaction) {
   const modal = TableUtils.makeModalAddTable();
+  await interaction.showModal(modal);
+}
+
+async function modaleEditTable(table) {
+  const modal = TableUtils.makeModalEditTable(table);
+  await interaction.showModal(modal);
+}
+
+async function modaleWhichDeleteTable(interaction) {
+  const modal = TableUtils.makeModalWhichDeleteTable();
+  await interaction.showModal(modal);
+}
+
+async function modaleWhichEditTable(interaction) {
+  const modal = TableUtils.makeModalWhichEditTable();
   await interaction.showModal(modal);
 }
 
@@ -156,30 +181,7 @@ function repete(message) {
 
 
 function cmdVoirTable(interaction) {
-  var dateJour = new Date();
-  // Samedi
-  const nextSamedi = new Date();
-  nextSamedi.setDate(dateJour.getDate() + (7 + 7 - dateJour.getDay()) % 7)
-
-  const dateSamedi = nextSamedi.getFullYear().toString().padStart(4, "0")
-    + (nextSamedi.getMonth() + 1).toString().padStart(2, "0")
-    + (nextSamedi.getDate() - 1).toString().padStart(2, "0");
-  var reponse = TableUtils.afficherTables(dateSamedi);
-  interaction.channel.send(reponse).then(message => TableUtils.enregistrerMessageId(dateSamedi, message));
-
-  // Dimanche
-  const nextDimanche = new Date();
-  nextDimanche.setDate(nextSamedi.getDate() + 1)
-
-  const dateDimanche = nextDimanche.getFullYear().toString().padStart(4, "0")
-    + (nextDimanche.getMonth() + 1).toString().padStart(2, "0")
-    + (nextDimanche.getDate() - 1).toString().padStart(2, "0");
-  reponse = TableUtils.afficherTables(dateDimanche);
-  interaction.channel.send(reponse).then(message => TableUtils.enregistrerMessageId(dateDimanche, message));
-
-  // confirmation d'affichage
-  interaction.reply({ content: "Les tables du week end ont été affichées.", ephemeral: true });
-  interaction.deleteReply();
+  TableUtils.afficherTables(interaction);
 }
 
 function cmdAjouterLivre(message) {
@@ -191,6 +193,7 @@ function cmdSupprimerLivre(message) {
 }
 
 export {
+  retourModaleDefinition as RetourModaleDefinition,
   slashCommands as SlashCommands,
   reactions as Reactions,
   typesReaction as TYPES

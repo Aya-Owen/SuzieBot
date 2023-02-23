@@ -42,6 +42,14 @@ function formatYMDtoFormatNormal(date) {
     return dateFormat;
 }
 
+function effacerMessage(guild, channedId, messageId) {
+    guild.channels.fetch(channedId).then(channel => {
+        channel.messages.fetch(messageId).then(msg => {
+            msg.delete();
+        }, error => { });
+    }, error => { })
+}
+
 // liste des fonctions exportées
 const Utils = {
     randomInListe: randomInListe,
@@ -50,6 +58,7 @@ const Utils = {
     ecrireObjetDansFichier: ecrireObjetDansFichier,
     lireObjetDansFichier: lireObjetDansFichier,
     lireTexteDansFichierBdd: lireTexteDansFichierBdd,
-    formatYMDtoFormatNormal: formatYMDtoFormatNormal
+    formatYMDtoFormatNormal: formatYMDtoFormatNormal,
+    effacerMessage: effacerMessage
 };
 export { Utils as Utils };

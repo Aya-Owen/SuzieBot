@@ -1,6 +1,6 @@
 import { Config } from "./services/config.js";
 import { TableUtils } from './services/table.utils.js';
-import { Reactions, SlashCommands, TYPES } from "./services/suzie-commands.js";
+import { Reactions, SlashCommands, TYPES, RetourModaleDefinition } from "./services/suzie-commands.js";
 import { Client, GatewayIntentBits, Partials, Collection, Events, REST, Routes, EmbedBuilder } from 'discord.js';
 import { SuzieMessage } from "./services/reponses.js"
 
@@ -80,9 +80,11 @@ async function receptionInteraction(interaction) {
 
   // --- réception modale ---
   if (interaction.isModalSubmit()) {
-    if (interaction.customId == 'addTableModal') {
-      TableUtils.enregistrerTables(interaction);
-    }
+    RetourModaleDefinition.forEach(commande => {
+      if (interaction.customId == commande.name) {
+        commande.fonction(interaction);
+      }
+    })
   }
 
   // --- réception Commandes slash ---
