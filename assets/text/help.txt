@@ -1,0 +1,12 @@
+Je suis Suzie, la robot assistante des Rôlistes Rouennais :)
+Voici les commandes auquelles j'obéis :
+
+Ces commandes vous permettent de gérer les tables pour le week end à venir.
+- /ajoutertable
+- /modifiertable (pas encore implémenté)
+- /supprimertable (pas encore implémenté)
+- /affichertable
+
+Ces commandes vous permettent de consulter l'inventaire des rôlistes rouennais
+- /inventairejds
+- /inventairejdr
