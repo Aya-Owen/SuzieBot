@@ -9,9 +9,9 @@ import { SuzieMessage } from "./reponses.js"
 // -------------------------------------------------
 const retourModaleDefinition = [
   { name: 'addTableModal', fonction: TableUtils.enregistrerTables },
-  { name: 'editTableModal', fonction: TableUtils.modifierTable },
+  //{ name: 'editTableModal', fonction: TableUtils.modifierTable },
   { name: 'whichDeleteTableModal', fonction: TableUtils.supprimerTable },
-  { name: 'whichEditTableModal', fonction: TableUtils.preciserMidificationTable },
+  //{ name: 'whichEditTableModal', fonction: TableUtils.preciserModificationTable },
 ];
 
 // ----------------------------------
@@ -20,7 +20,7 @@ const retourModaleDefinition = [
 const slashCommandsDefinition = [
   { name: 'ajoutertable', description: 'Prévoir une table pour un prochain weekend.', fonction: cmdSlashAjouterTable },
   { name: 'supprimertable', description: 'Supprimer une de tes tables existantes.', fonction: cmdSlashSupprimerTable },
-  { name: 'modifiertable', description: 'Modifier une table déjà prévue.', fonction: cmdSlashModifiertable },
+  //{ name: 'modifiertable', description: 'Modifier une table déjà prévue.', fonction: cmdSlashModifiertable },
 
   { name: 'afficherprochainestables', description: 'Afficher les tables prévues pour bientôt.', fonction: cmdSlashAfficherTable },
   { name: 'affichermestables', description: 'Afficher les tables futures que tu as prévues.', fonction: cmdSlashAfficherTable },

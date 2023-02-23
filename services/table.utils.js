@@ -98,20 +98,24 @@ function fillTableModal(modal, valeursModale) {
 
     // si on a déjà des infos à mettre dans la modale
     if (!!valeursModale) {
-        if (!!valeursModale.tableDay) tableMax.setValue(valeursModale.tableDay);
-        if (!!valeursModale.tableName) tableMax.setValue(valeursModale.tableName);
-        if (!!valeursModale.tableGenre) tableMax.setValue(valeursModale.tableGenre);
-        if (!!valeursModale.tableMin) tableMax.setValue(valeursModale.tableMin);
+        if (!!valeursModale.tableName) tableName.setValue(valeursModale.tableName);
+        if (!!valeursModale.tableGenre) tableGenre.setValue(valeursModale.tableGenre);
+        if (!!valeursModale.tableMin) tableMin.setValue(valeursModale.tableMin);
         if (!!valeursModale.tableMax) tableMax.setValue(valeursModale.tableMax);
+
+        const row2 = new ActionRowBuilder().addComponents(tableName);
+        const row3 = new ActionRowBuilder().addComponents(tableGenre);
+        const row4 = new ActionRowBuilder().addComponents(tableMin);
+        const row5 = new ActionRowBuilder().addComponents(tableMax);
+        modal.addComponents(row2, row3, row4, row5);
+    } else {
+        const row1 = new ActionRowBuilder().addComponents(tableDay);
+        const row2 = new ActionRowBuilder().addComponents(tableName);
+        const row3 = new ActionRowBuilder().addComponents(tableGenre);
+        const row4 = new ActionRowBuilder().addComponents(tableMin);
+        const row5 = new ActionRowBuilder().addComponents(tableMax);
+        modal.addComponents(row1, row2, row3, row4, row5);
     }
-
-    const row1 = new ActionRowBuilder().addComponents(tableDay);
-    const row2 = new ActionRowBuilder().addComponents(tableName);
-    const row3 = new ActionRowBuilder().addComponents(tableGenre);
-    const row4 = new ActionRowBuilder().addComponents(tableMin);
-    const row5 = new ActionRowBuilder().addComponents(tableMax);
-
-    modal.addComponents(row1, row2, row3, row4, row5);
     return modal;
 }
 
@@ -234,9 +238,7 @@ function enregistrerTables(interaction) {
             + fieldMax
             + " personnes, menée par"
             + interaction.user.username
-            + "#"
-            + interaction.user.discriminator
-            + " (" + (tablesExistantes.sequence - 1) + ")."
+            + " (référence de la table : " + (tablesExistantes.sequence - 1) + ")."
         , ephemeral: true
     });
 
@@ -249,6 +251,187 @@ function enregistrerTables(interaction) {
         });
     }
 }
+
+async function preciserModificationTable(interaction) {
+    const fieldDate = interaction.fields.getField("tableDay").value;
+    const fieldNum = interaction.fields.getField("tableNumber").value;
+    // ------------------------
+    // --- GESTION D'ERREUR ---
+    // ------------------------
+
+    // on vérifie le format des valeurs récupérées
+    var dateOk = fieldDate.match(regexDate);
+    const numOk = fieldNum.match(regexChiffre);
+
+    var annee = new Date().getFullYear();
+    var mois = fieldDate.charAt(3) + fieldDate.charAt(4);
+    var jour = fieldDate.charAt(0) + fieldDate.charAt(1);
+
+    // annee suivante si le mois sélectionné est déjà passé.
+    if (new Date().getMonth() > mois) { ++annee; }
+
+    // on cherche les pb de date
+    try {
+        var dateString = jour + "/" + mois + "/" + annee;
+        var dateMomentObject = moment(dateString, "DD/MM/YYYY"); // 1st argument - string, 2nd argument - format
+        var date = dateMomentObject.toDate(); // convert moment.js object to Date object
+        dateOk = !(isNaN(date));
+    } catch (e) {
+        dateOk = false;
+    }
+
+    if (!(dateOk && numOk)) {
+        var messageErreur = "Suppression de la table impossible. Il y a une erreur dans les infos fournies :";
+        if (!dateOk) { messageErreur += "\n - la date " + fieldDate + " ne correspond pas au format JJ/MM." }
+        if (!numOk) { messageErreur += "\n - le numéro " + fieldNum + " ne correspond pas à un chiffre." }
+        interaction.reply({ content: messageErreur, ephemeral: true });
+        return;
+    }
+
+    // --------------------
+    // --- RECUPERATION ---
+    // --------------------
+
+    // on récupère les tables existantes sur la date
+    const dateFormatee = annee + mois + jour;
+    var tablesExistantes = Utils.lireObjetDansFichier("tables_" + dateFormatee);
+    if (!tablesExistantes || tablesExistantes.tables.length == 0) {
+        var messageErreur = "Erreur ! Aucune table trouvée à la date entrée !";
+        interaction.reply({ content: messageErreur, ephemeral: true });
+        return;
+    }
+
+    // on cherche la table avec le meme num
+    var tableModifiee = null;
+    tablesExistantes.tables.forEach(table => {
+        if (table.sequenceId == fieldNum) {
+            if (!!tableModifiee) console.log("Mmh, bizarre, deux tables appartenait à la même date et le même ID...");
+            tableModifiee = table;
+        }
+    });
+
+    if (!tableModifiee) {
+        var messageErreur = "Erreur ! Sur cette date, aucune table trouvée pour ce numéro !";
+        interaction.reply({ content: messageErreur, ephemeral: true });
+        return;
+    }
+
+    if (tableModifiee.userId !== interaction.user.id && !interaction.member._roles.includes(Config.roleSuppressionTableId)) {
+        var messageErreur = "Erreur ! Cette table appartient à quelqu'un d'autre ! Demandez à un membre du CA de la modifier.";
+        interaction.reply({ content: messageErreur, ephemeral: true });
+        return;
+    }
+
+    const modal = makeModalEditTable({
+        tableDay: fieldDate,
+        tableName: tableModifiee.nom,
+        tableGenre: tableModifiee.genre,
+        tableMin: tableModifiee.min,
+        tableMax: tableModifiee.max
+    });
+    modal.test = "watwat";
+    await interaction.showModal(modal);
+
+}
+
+function modifierTable(interaction) {
+    const fieldDate = interaction.fields.getField("tableDay").value;
+    const fieldMin = interaction.fields.getField("tableMin").value;
+    const fieldMax = interaction.fields.getField("tableMax").value;
+    const idTable = interaction.id;
+
+    // ------------------------
+    // --- GESTION D'ERREUR ---
+    // ------------------------
+
+    // on vérifie le format des valeurs récupérées
+    var dateOk = fieldDate.match(regexDate);
+    const minOk = fieldMin.match(regexChiffre);
+    const maxOk = fieldMax.match(regexChiffre);
+    const minMaxOk = (minOk && maxOk) ? parseInt(minOk) <= parseInt(maxOk) : false;
+    var annee = new Date().getFullYear();
+    var mois = fieldDate.charAt(3) + fieldDate.charAt(4);
+    var jour = fieldDate.charAt(0) + fieldDate.charAt(1);
+
+    // annee suivante si le mois sélectionné est déjà passé.
+    if (new Date().getMonth() > mois) { ++annee; }
+
+    // on cherche les pb de date
+    try {
+        var dateString = jour + "/" + mois + "/" + annee;
+        var dateMomentObject = moment(dateString, "DD/MM/YYYY"); // 1st argument - string, 2nd argument - format
+        var date = dateMomentObject.toDate(); // convert moment.js object to Date object
+        dateOk = !(isNaN(date));
+    } catch (e) {
+        dateOk = false;
+    }
+
+    if (!(dateOk && minOk && maxOk && minMaxOk)) {
+        var messageErreur = "Modification de la table impossible. Il y a une erreur dans les infos fournies :";
+        if (!dateOk) { messageErreur += "\n - la date " + fieldDate + " ne correspond pas au format JJ/MM." }
+        if (!minOk) { messageErreur += "\n - le min " + fieldMin + " ne correspond pas à un chiffre." }
+        if (!maxOk) { messageErreur += "\n - le max " + fieldMax + " ne correspond pas à un chiffre." }
+        if (!minMaxOk) { messageErreur += "\n - le max " + fieldMax + " est inférieur au min " + fieldMin + "." }
+        interaction.reply({ content: messageErreur, ephemeral: true });
+        return;
+    }
+
+    // ----------------------
+    // --- ENREGISTREMENT ---
+    // ----------------------
+
+    // on récupère les tables déjà existantes
+    const dateFormatee = annee + mois + jour;
+    var tablesExistantes = Utils.lireObjetDansFichier("tables_" + dateFormatee);
+    if (!tablesExistantes || tablesExistantes.tables.length == 0) {
+        var messageErreur = "Erreur ! Aucune table trouvée à la date entrée !";
+        interaction.reply({ content: messageErreur, ephemeral: true });
+        return;
+    }
+
+    // on ajoute la nouvelle et on enregistre
+    tablesExistantes.tables.forEach(table => {
+        if (table.sequenceId == idTable) {
+            table.nom = interaction.fields.getField("tableName").value;
+            table.genre = interaction.fields.getField("tableGenre").value;
+            table.min = fieldMin;
+            table.max = fieldMax;
+        }
+    });
+    Utils.ecrireObjetDansFichier("tables_" + dateFormatee, tablesExistantes);
+
+    // --------------------------
+    // --- RETOUR UTILISATEUR ---
+    // --------------------------
+
+    // on confirme à l'utilisateur
+    interaction.reply({
+        content: "Nouvelle table enregistrée : \n\""
+            + interaction.fields.getField("tableName").value
+            + "\" ("
+            + interaction.fields.getField("tableGenre").value
+            + "), le "
+            + fieldDate
+            + " pour de "
+            + fieldMin
+            + " à "
+            + fieldMax
+            + " personnes, menée par"
+            + interaction.user.username
+            + " (référence de la table : " + (tablesExistantes.sequence - 1) + ")."
+        , ephemeral: true
+    });
+
+    // si on a déjà affiché la table, on met à jour le message
+    if (tablesExistantes.idChannel && tablesExistantes.idMessage) {
+        interaction.guild.channels.fetch(tablesExistantes.idChannel).then(channel => {
+            channel.messages.fetch(tablesExistantes.idMessage).then(message => {
+                message.edit(messageTables(dateFormatee));
+            });
+        });
+    }
+}
+
 
 function supprimerTable(interaction) {
     const fieldDate = interaction.fields.getField("tableDay").value;
@@ -288,9 +471,9 @@ function supprimerTable(interaction) {
         return;
     }
 
-    // ----------------------
-    // --- ENREGISTREMENT ---
-    // ----------------------
+    // -------------------
+    // --- SUPPRESSION ---
+    // -------------------
 
     // on récupère les tables déjà existantes
     const dateFormatee = annee + mois + jour;
@@ -348,9 +531,7 @@ function supprimerTable(interaction) {
             + tableSupprimee.max
             + " personnes, menée par"
             + tableSupprimee.user
-            + "#"
-            + tableSupprimee.userDiscriminator
-            + " (" + tableSupprimee.sequenceId + ")."
+            + " (référence de la table : " + tableSupprimee.sequenceId + ")."
         , ephemeral: true
     });
 
@@ -377,7 +558,7 @@ function messageTables(date) {
             if (element.genre && element.genre.length > 0) { reponse += " (" + element.genre + ")"; }
 
             reponse += ",  pour de " + element.min + " à " + element.max
-                + " personnes, menée par " + element.user + "#" + element.userDiscriminator + " (" + (element.sequenceId) + ")" + "."
+                + " personnes, menée par " + element.user + " (référence de la table : " + (element.sequenceId) + ")" + "."
         });
 
     } else {
@@ -447,6 +628,8 @@ const TableUtils = {
     // execution des actions
     enregistrerTables: enregistrerTables,
     supprimerTable: supprimerTable,
+    preciserModificationTable: preciserModificationTable,
+    modifierTable: modifierTable,
     enregistrerMessageId: enregistrerMessageId,
     afficherTables: afficherTables
 };
