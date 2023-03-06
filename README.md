@@ -47,7 +47,7 @@ tables_20230218.json (tables_AAAAMMJJ.json)
     "tables": [
         {
             "nom":"Maléfices !", <--- nom du jeu
-            "genre":"trop cool", <--- ambiance général du jeu
+            "genre":"trop cool", <--- ambiance générale du jeu
             "min":"4", <--- nombre min de joueurs
             "max":"5", <--- nombre max de joueurs
             "user":"Pierre", <--- Nom du compte discord
@@ -62,11 +62,11 @@ tables_20230218.json (tables_AAAAMMJJ.json)
             "max":"5",
             "user":"Michelle",
             "userDiscriminator":"0123",
-            "userId":"123456789", <--- Id du compte discord
+            "userId":"123456789",
             "sequenceId":2
         }
     ],
-    "sequence": 3, <--- nombre max de joueurs
+    "sequence": 3, <--- numero de suivi pour l'ajout/suppression de table
     "idMessage":"789456123456", <--- Id du message (posté par le bot) résumant le fichier
     "idChannel":"456789456123" <--- Id du canal sur lequel le message a été posté
 }
