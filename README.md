@@ -4,7 +4,38 @@ Suzie est l'assistante des rôlistes rouennais. Elle permettra essentiellement �
 
 Elle possède également des commandes de lecture d'inventaire.
 
-## Tables
+## Utilisation de Suzie
+
+### 1 - Téléchargement
+- Avec un outil GIT, comme gitKraken par exemple, clonez ce repo
+ou
+- téléchargez et dézippez le projet https://github.com/Aya-Owen/SuzieBot (bouton "code")
+
+### 2 - Installation
+- Vous avez besoin d'installer Node.js : https://nodejs.org/fr/
+- Déplacer vous dans le dossier racine de suzie (celui dans lequel vous trouverez package.json)
+- Avec un invite de commande windows, lancer la commande suivante:
+```
+npm install
+```
+
+### 3 - Parametrage
+Le fichier config.json contient les infos nécessaires au fonctionnement de Suzie
+- token : le token associé au bot, permettant à ce programme d'en prendre le contrôle
+- clientId : l'id du client du bot
+- guildId : l'id du serveur discord utilisant Suzie
+- roleSuppressionTableId : l'id du rôle ayant le droit de supprimer n'importe quelle table prévue. Les membres n'ayant pas de rôle ne pourront supprimer que les leurs.
+
+
+### 4 - Lancement de Suzie
+- Déplacer vous dans le dossier racine de suzie (celui dans lequel vous trouverez package.json)
+- Avec un invite de commande windows, lancer la commande suivante:
+```
+npm run
+```
+
+## Fonctionnement de Suzie
+### Tables
 Chaque semaine, jusqu'à 2 fichiers sont créés. Un pour le samedi et un pour le dimanche.
 Ces fichiers de base de données sont présentés ainsi :
 ```
@@ -40,3 +71,7 @@ tables_20230218.json (tables_AAAAMMJJ.json)
     "idChannel":"456789456123" <--- Id du canal sur lequel le message a été posté
 }
 ```
+
+### Inventaire
+
+TODO
