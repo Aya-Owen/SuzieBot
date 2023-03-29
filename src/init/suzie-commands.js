@@ -1,17 +1,16 @@
-import { SlashCommandBuilder } from 'discord.js';
-import { Utils } from './utils.js';
-import { InventaireUtils } from './inventaire.utils.js';
-import { TableUtils } from './table.utils.js';
-import { SuzieMessage } from "./reponses.js"
+import { Config } from "../utils/load/config.js";
+import { Utils } from '../utils/utils.js';
+import { InventaireUtils } from '../service/inventaire.service.js';
+import { TableUtils } from '../service/table.service.js';
+import { SuzieMessage } from "../utils/load/reponses.js"
 
 // -------------------------------------------------
 // --- LISTER LES RECEPTION DE RETOUR DE MODALES ---
 // -------------------------------------------------
 const retourModaleDefinition = [
   { name: 'addTableModal', fonction: TableUtils.enregistrerTables },
-  //{ name: 'editTableModal', fonction: TableUtils.modifierTable },
+  //{ name: 'editTableModal', fonction: TableUtils.enregistrerModificationTable },
   { name: 'whichDeleteTableModal', fonction: TableUtils.supprimerTable },
-  //{ name: 'whichEditTableModal', fonction: TableUtils.preciserModificationTable },
 ];
 
 
@@ -21,12 +20,23 @@ const retourModaleDefinition = [
 const slashCommandsDefinition = [
   { name: 'ajoutertable', description: 'Prévoir une table pour un prochain weekend.', fonction: cmdSlashAjouterTable },
   { name: 'supprimertable', description: 'Supprimer une de tes tables existantes.', fonction: cmdSlashSupprimerTable },
-  //{ name: 'modifiertable', description: 'Modifier une table déjà prévue.', fonction: cmdSlashModifiertable },
+  {
+    name: 'modifiertable', description: 'Modifier une table déjà prévue.', fonction: cmdSlashModifiertable, options: [
+      { name: "date", description: "La date prévue (jj/mm)", required: true },
+      { name: "numerotable", description: "Le numéro de la table", required: true }
+    ]
+  },
 
   { name: 'afficherprochainestables', description: 'Afficher les tables prévues pour bientôt.', fonction: cmdSlashAfficherTable },
   { name: 'affichermestables', description: 'Afficher les tables futures que tu as prévues.', fonction: cmdSlashAfficherTable },
   { name: 'afficherfuturestables', description: 'Afficher toutes les tables futures.', fonction: cmdSlashAfficherTable },
 
+  {
+    name: 'inventaire', description: 'Lister l\'inventaire', fonction: cmdSlashInventaire, options: [
+      { name: "categorie", description: "La catégorie à afficher", required: false },
+      { name: "gamme", description: "La gamme à afficher", required: false }
+    ]
+  },
   { name: 'inventairejds', description: 'Lister l\'inventaire des jeux de société de l\'asso', fonction: cmdSlashInventaireJds },
   { name: 'inventairejdr', description: 'Lister l\'inventaire des jeux de rôle de l\'asso', fonction: cmdSlashInventaireJdr },
 ];
@@ -36,29 +46,30 @@ const slashCommandsDefinition = [
 // --- LISTER LES REACTIONS ---
 // ----------------------------
 const typesReaction = { MOT_CONTENU: "MOT_CONTENU", MOT_EXACT: "MOT_EXACT", MOT_COMMENCE: "MOT_COMMENCE" };
-const reactions = {
+const reactionsDefinition = {
   avecAppel: [
-    { terme: ["help", "aide"], type: [typesReaction.MOT_EXACT], fonction: cmdHelp },
-    { terme: ["merci", "danke", "thank"], type: [typesReaction.MOT_COMMENCE], fonction: cmdMerci },
-    { terme: ["dis "], type: [typesReaction.MOT_COMMENCE], fonction: cmdRepete },
+    { name: "help", terme: ["help", "aide"], type: [typesReaction.MOT_EXACT], fonction: cmdHelp },
+    { name: "merci", terme: ["merci", "danke", "thank"], type: [typesReaction.MOT_COMMENCE], fonction: cmdMerci },
+    { name: "dis", terme: ["dis "], type: [typesReaction.MOT_COMMENCE], fonction: cmdRepete },
     {
+      name: "bonjour",
       terme: ["bonjour", "hello", "salut", "hi", "salutation", "salutations", "hey", "coucou", "hola"],
       type: [typesReaction.MOT_EXACT], fonction: cmdBonjour
     },
     {
+      name: "opinion",
       terme: ["que penses tu d", "que penses-tu d", "tu connais", "qu'est ce que tu penses d"],
       type: [typesReaction.MOT_CONTENU], fonction: cmdOpinion
     }
   ],
   sansAppel: [
     // sans appel
-    { terme: [" di", " dy"], type: [typesReaction.MOT_CONTENU], fonction: cmdDi },
-    { terme: ["😢", "T_T", ":(", ":'(", "='(", "=(", ":c", "=c", "😦"], type: [typesReaction.MOT_EXACT], fonction: cmdCheh },
-    { terme: ["j'ai perdu"], type: [typesReaction.MOT_CONTENU], fonction: cmdPerdu },
-    { terme: ["livre", "book", "bouquin", "bibliothèque", "librairie"], type: [typesReaction.MOT_CONTENU], fonction: cmdReactLivre }
+    { name: "di", terme: [" di", " dy"], type: [typesReaction.MOT_CONTENU], fonction: cmdDi },
+    { name: "sad", terme: ["😢", "T_T", ":(", ":'(", "='(", "=(", ":c", "=c", "😦"], type: [typesReaction.MOT_EXACT], fonction: cmdCheh },
+    { name: "perdu", terme: ["j'ai perdu"], type: [typesReaction.MOT_CONTENU], fonction: cmdPerdu },
+    { name: "livre", terme: ["livre", "book", "bouquin", "bibliothèque", "librairie"], type: [typesReaction.MOT_CONTENU], fonction: cmdReactLivre }
   ],
 };
-
 
 
 
@@ -78,12 +89,13 @@ function cmdPerdu(message) { message.reply("J'ai perdu !"); }
 function cmdReactLivre(message) { message.react(Utils.randomInListe(['📔', '📖', '📚'])); }
 
 // commandes
-function cmdSlashAfficherTable(interaction) { cmdVoirTable(interaction); }
-function cmdSlashAjouterTable(interaction) { modaleCreateTable(interaction); }
-function cmdSlashSupprimerTable(interaction) { modaleWhichDeleteTable(interaction); }
-function cmdSlashModifiertable(interaction) { modaleWhichEditTable(interaction); }
-function cmdSlashInventaireJds(interaction) { inventaireInteraction(interaction, InventaireUtils.Types.JDS); }
-function cmdSlashInventaireJdr(interaction) { inventaireInteraction(interaction, InventaireUtils.Types.JDR); }
+function cmdSlashAfficherTable(interaction) { TableUtils.afficherTables(interaction); }
+function cmdSlashAjouterTable(interaction) { TableUtils.modaleCreateTable(interaction); }
+function cmdSlashSupprimerTable(interaction) { TableUtils.supprimerTable(interaction); }
+function cmdSlashModifiertable(interaction) { TableUtils.modaleEditTable(interaction); }
+function cmdSlashInventaire(interaction) { InventaireUtils.inventaire(interaction); }
+function cmdSlashInventaireJds(interaction) { InventaireUtils.inventaireInteraction(interaction, InventaireUtils.Types.JDS); }
+function cmdSlashInventaireJdr(interaction) { InventaireUtils.inventaireInteraction(interaction, InventaireUtils.Types.JDR); }
 
 
 
@@ -92,26 +104,6 @@ function cmdSlashInventaireJdr(interaction) { inventaireInteraction(interaction,
 // ----------------------------
 // --- FONCTIONS A EXECUTER ---
 // ----------------------------
-
-async function modaleCreateTable(interaction) {
-  const modal = TableUtils.makeModalAddTable();
-  await interaction.showModal(modal);
-}
-
-async function modaleEditTable(table) {
-  const modal = TableUtils.makeModalEditTable(table);
-  await interaction.showModal(modal);
-}
-
-async function modaleWhichDeleteTable(interaction) {
-  const modal = TableUtils.makeModalWhichDeleteTable();
-  await interaction.showModal(modal);
-}
-
-async function modaleWhichEditTable(interaction) {
-  const modal = TableUtils.makeModalWhichEditTable();
-  await interaction.showModal(modal);
-}
 
 function findDi(message) {
   const mots = message.content.replace(/(,|\.|:|\\|-|'|;|\/|\?)/g, ' ').split(' ');
@@ -129,40 +121,11 @@ function findDi(message) {
   }
 }
 
-function inventaireInteraction(interaction, type) {
-  const action = "";
-  const code = "";
-  const inventaire = InventaireUtils.getInventaire(type);
-  const listeGamme = InventaireUtils.getListeGamme(inventaire);
-  listeGamme.sort((a, b) => a.toUpperCase().localeCompare(b.toUpperCase()));
-
-  var intro = "Woaw, on a " + inventaire.length + " trucs dans cette catégorie ! Voilà les différents jeux :\n";
-  var liste = listeGamme.join("\n- ");
-  var reponse;
-
-  if (intro.length + liste.length >= 1998) {
-    reponse = intro + "Désolée, je ne peux pas tout afficher :/ Je suis limitée à 2000 caractères.";
-  }
-  else {
-    reponse = intro + "- " + liste;
-  }
-  interaction.reply({
-    content: reponse,
-    ephemeral: true
-  });
-}
-
 function repete(message) {
   const finDis = message.content.indexOf("dis ") + 4;
   let messageFinal = new String(message.content);
   messageFinal = messageFinal.substring(finDis).trim();
   message.channel.send(messageFinal);
-}
-
-
-
-function cmdVoirTable(interaction) {
-  TableUtils.afficherTables(interaction);
 }
 
 function cmdAjouterLivre(message) {
@@ -173,9 +136,17 @@ function cmdSupprimerLivre(message) {
   message.channel.send("TODO");
 }
 
+// filtrer les commandes activées ou non
+var retourModaleDefinitionFiltree = retourModaleDefinition.filter(def => (Config.commandes.retourModale[def.name]));
+var slashCommandsDefinitionFiltree = slashCommandsDefinition.filter(def => (Config.commandes.slashCommands[def.name]));
+var reactionsDefinitionFiltree = {
+  avecAppel: reactionsDefinition.avecAppel.filter(def => (Config.commandes.reactions[def.name])),
+  sansAppel: reactionsDefinition.sansAppel.filter(def => (Config.commandes.reactions[def.name]))
+};
+
 export {
-  retourModaleDefinition as RetourModaleDefinition,
-  slashCommandsDefinition as SlashCommandsDefinition,
-  reactions as Reactions,
+  retourModaleDefinitionFiltree as RetourModaleDefinition,
+  slashCommandsDefinitionFiltree as SlashCommandsDefinition,
+  reactionsDefinitionFiltree as ReactionsDefinition,
   typesReaction as TYPES
 };

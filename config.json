@@ -2,5 +2,35 @@
     "token": "",
     "clientId": "",
     "guildId": "",
-    "roleSuppressionTableId": ""
+    "roleSuppressionTableId": "",
+    "commandes": {
+        "retourModale": {
+            "addTableModal": true,
+            "editTableModal": true,
+            "whichDeleteTableModal": true,
+            "whichEditTableModal": true
+        },
+        "slashCommands": {
+            "ajoutertable": true,
+            "supprimertable": true,
+            "modifiertable": true,
+            "afficherprochainestables": true,
+            "affichermestables": true,
+            "afficherfuturestables": true,
+            "inventaire": true,
+            "inventairejds": true,
+            "inventairejdr": true
+        },
+        "reactions": {
+            "help": true,
+            "merci": true,
+            "dis": true,
+            "bonjour": true,
+            "opinion": true,
+            "di": true,
+            "sad": true,
+            "perdu": true,
+            "livre": true
+        }
+    }
 }
