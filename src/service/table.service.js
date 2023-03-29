@@ -24,9 +24,17 @@ async function modaleEditTable(interaction) {
     if (!!fichier) {
         var infos = FileUtils.lireObjetDansFichier(fichier);
         const table = infos.tables.filter(t => t.sequenceId == fieldNum)[0];
+
+
+        // table trouvée, mais sur un user different
+        if (table.userId !== interaction.user.id && !interaction.member._roles.includes(Config.roleSuppressionTableId)) {
+            var messageErreur = "Erreur ! Cette table appartient à quelqu'un d'autre ! Demandez à un membre du CA de la supprimer.";
+            interaction.reply({ content: messageErreur, ephemeral: true });
+            return;
+        }
+
         const modal = ModalUtils.makeModalEditTable(table);
         if (!modal) { return; }
-        console.log(modal);
         await interaction.showModal(modal);
 
         // Get the Modal Submit Interaction that is emitted once the User submits the Modal
@@ -70,7 +78,12 @@ async function supprimerTable(interaction) {
     const fichier = verificationTableExistante(fieldDate, fieldNum);
 
     if (!!fichier) {
-        suppressionTable(fichier, fieldNum)
+        const data = {
+            fichier: fichier,
+            fieldDate: fieldDate,
+            fieldNum: fieldNum
+        }
+        suppressionTable(interaction, data);
     } else {
         interaction.reply({ content: 'Cette table n\'existe pas !', ephemeral: true });
         return;
@@ -213,6 +226,7 @@ function modifierTable(interaction, data) {
     // ----------------------
     // on récupère les tables déjà existantes
     var tablesExistantes = FileUtils.lireObjetDansFichier(data.fichier);
+
     // on ajoute la nouvelle et on enregistre
     tablesExistantes.tables.forEach(table => {
         if (table.sequenceId == data.fieldNum) {
@@ -250,12 +264,8 @@ function modifierTable(interaction, data) {
     if (tablesExistantes.idChannel && tablesExistantes.idMessage) {
         interaction.guild.channels.fetch(tablesExistantes.idChannel).then(channel => {
             channel.messages.fetch(tablesExistantes.idMessage).then(message => {
-                var annee = new Date().getFullYear();
-                var mois = data.fieldDate.charAt(3) + data.fieldDate.charAt(4);
-                var jour = data.fieldDate.charAt(0) + data.fieldDate.charAt(1);
-                // annee suivante si le mois sélectionné est déjà passé.
-                if (new Date().getMonth() > mois) { ++annee; }
-                const dateFormatee = annee + mois + jour;
+                const date = Utils.getNextDateFromString(data.fieldDate);
+                const dateFormatee = dateFormat(date, "yyyymmdd");
 
                 message.edit(messageTables(dateFormatee));
             });
@@ -264,8 +274,8 @@ function modifierTable(interaction, data) {
 }
 
 
-function suppressionTable(fichier, fieldNum) {
-    var tablesExistantes = FileUtils.lireObjetDansFichier(fichier);
+function suppressionTable(interaction, data) {
+    var tablesExistantes = FileUtils.lireObjetDansFichier(data.fichier);
     if (!tablesExistantes || tablesExistantes.tables.length == 0) {
         var messageErreur = "Erreur ! Aucune table trouvée à la date entrée !";
         interaction.reply({ content: messageErreur, ephemeral: true });
@@ -277,7 +287,7 @@ function suppressionTable(fichier, fieldNum) {
     var tablesConservees = [];
     var tableSupprimee = null;
     tablesExistantes.tables.forEach(table => {
-        if (table.sequenceId != fieldNum) {
+        if (table.sequenceId != data.fieldNum) {
             tablesConservees.push(table);
         } else {
             if (!!tableSupprimee) console.log("Mmh, bizarre, deux tables appartenait à la même date et le même ID...");
@@ -299,7 +309,7 @@ function suppressionTable(fichier, fieldNum) {
 
 
     tablesExistantes.tables = tablesConservees;
-    FileUtils.ecrireObjetDansFichier(fichier, tablesExistantes);
+    FileUtils.ecrireObjetDansFichier(data.fichier, tablesExistantes);
 
     // --------------------------
     // --- RETOUR UTILISATEUR ---
@@ -312,7 +322,7 @@ function suppressionTable(fichier, fieldNum) {
             + "\" ("
             + tableSupprimee.genre
             + "), le "
-            + fieldDate
+            + data.fieldDate
             + " pour de "
             + tableSupprimee.min
             + " à "
@@ -327,6 +337,9 @@ function suppressionTable(fichier, fieldNum) {
     if (tablesExistantes.idChannel && tablesExistantes.idMessage) {
         interaction.guild.channels.fetch(tablesExistantes.idChannel).then(channel => {
             channel.messages.fetch(tablesExistantes.idMessage).then(message => {
+                const date = Utils.getNextDateFromString(data.fieldDate);
+                const dateFormatee = dateFormat(date, "yyyymmdd");
+
                 message.edit(messageTables(dateFormatee));
             });
         });
@@ -366,9 +379,6 @@ function enregistrerMessageId(date, message) {
         if (!!infos.idChannel && !!infos.idMessage) {
             Utils.effacerMessage(message.guild, infos.idChannel, infos.idMessage);
         }
-        /*message.channel.messages.fetch(infos.idMessage).then(msg => {
-            console.log(msg);
-        });*/
     }
 
     // on met à jour avec les infos du nouveau message

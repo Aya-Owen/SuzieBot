@@ -19,7 +19,12 @@ const retourModaleDefinition = [
 // ----------------------------------
 const slashCommandsDefinition = [
   { name: 'ajoutertable', description: 'Prévoir une table pour un prochain weekend.', fonction: cmdSlashAjouterTable },
-  { name: 'supprimertable', description: 'Supprimer une de tes tables existantes.', fonction: cmdSlashSupprimerTable },
+  {
+    name: 'supprimertable', description: 'Supprimer une de tes tables existantes.', fonction: cmdSlashSupprimerTable, options: [
+      { name: "date", description: "La date prévue (jj/mm)", required: true },
+      { name: "numerotable", description: "Le numéro de la table", required: true }
+    ]
+  },
   {
     name: 'modifiertable', description: 'Modifier une table déjà prévue.', fonction: cmdSlashModifiertable, options: [
       { name: "date", description: "La date prévue (jj/mm)", required: true },
